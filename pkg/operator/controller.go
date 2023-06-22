@@ -34,6 +34,8 @@ import (
 	"github.com/openshift/cloud-credential-operator/pkg/ovirt"
 	"github.com/openshift/cloud-credential-operator/pkg/util"
 	vsphereactuator "github.com/openshift/cloud-credential-operator/pkg/vsphere/actuator"
+	corev1client "k8s.io/client-go/kubernetes/typed/core/v1"
+	"k8s.io/client-go/tools/clientcmd"
 
 	configv1 "github.com/openshift/api/config/v1"
 
@@ -62,10 +64,26 @@ func init() {
 var AddToManagerFuncs []func(manager.Manager, string) error
 
 // AddToManagerWithActuatorFuncs is a list of functions to add all Controllers with Actuators to the Manager
-var AddToManagerWithActuatorFuncs []func(manager.Manager, actuator.Actuator, configv1.PlatformType) error
+var AddToManagerWithActuatorFuncs []func(manager.Manager, actuator.Actuator, configv1.PlatformType, corev1client.CoreV1Interface) error
 
 // AddToManager adds all Controllers to the Manager
+<<<<<<< HEAD
 func AddToManager(m manager.Manager, explicitKubeconfig string, awsSecurityTokenServiveGateEnaled bool) error {
+=======
+func AddToManager(m manager.Manager, explicitKubeconfig string) error {
+	rules := clientcmd.NewDefaultClientConfigLoadingRules()
+	rules.ExplicitPath = explicitKubeconfig
+	kubeconfig := clientcmd.NewNonInteractiveDeferredLoadingClientConfig(rules, &clientcmd.ConfigOverrides{})
+	cfg, err := kubeconfig.ClientConfig()
+	if err != nil {
+		return err
+	}
+	coreClient, err := corev1client.NewForConfig(cfg)
+	if err != nil {
+		return err
+	}
+
+>>>>>>> 3aa033186 (*: label the secrets we interact with)
 	for _, f := range AddToManagerFuncs {
 		if err := f(m, explicitKubeconfig); err != nil {
 			return err
@@ -135,7 +153,7 @@ func AddToManager(m manager.Manager, explicitKubeconfig string, awsSecurityToken
 			log.Info("initializing no-op actuator (unsupported platform)")
 			a = &actuator.DummyActuator{}
 		}
-		if err := f(m, a, platformType); err != nil {
+		if err := f(m, a, platformType, coreClient); err != nil {
 			return err
 		}
 	}
